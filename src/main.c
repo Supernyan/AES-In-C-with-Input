@@ -1,11 +1,8 @@
-/* Basic implementation of AES in C
- *
- * Warning: THIS CODE IS ONLY FOR LEARNING PURPOSES
- *          NOT RECOMMENDED TO USE IT IN ANY PRODUCTS
- */
+// Basic implementation of AES in C
 
 #include <stdio.h>  // for printf
 #include <stdlib.h> // for malloc, free
+#include <string.h>
 
 enum errorCode
 {
@@ -115,27 +112,48 @@ char aes_decrypt(unsigned char *input, unsigned char *output, unsigned char *key
 
 int main(int argc, char *argv[])
 {
-    // the expanded keySize
-    int expandedKeySize = 176;
+    // Read user input for the key
+    char key[256];
+    printf("Enter the encryption key: ");
+    fgets(key, sizeof(key), stdin);
 
+    // Remove the newline character from the key
+    key[strcspn(key, "\n")] = '\0';
+
+    // Read user input for the plaintext
+    char plaintext[256];
+    printf("Enter the plaintext: ");
+    fgets(plaintext, sizeof(plaintext), stdin);
+
+    // Remove the newline character from the plaintext
+    plaintext[strcspn(plaintext, "\n")] = '\0';
+
+    // Convert key and plaintext to unsigned char arrays
+    unsigned char *keyBytes = (unsigned char *)key;
+    unsigned char *plainBytes = (unsigned char *)plaintext;
+
+    // Calculate key size
+    enum keySize size;
+    size_t keyLen = strlen(key);
+    if (keyLen == 16) {
+        size = SIZE_16;
+    } else if (keyLen == 24) {
+        size = SIZE_24;
+    } else if (keyLen == 32) {
+        size = SIZE_32;
+    } else {
+        printf("Invalid key size. Key must be 16, 24, or 32 bytes.\n");
+        return 1;
+    }
+
+    // the expanded keySize
+    int expandedKeySize = 176; // for a 128-bit key
     // the expanded key
     unsigned char expandedKey[expandedKeySize];
-
-    // the cipher key
-    unsigned char key[16] = {'k', 'k', 'k', 'k', 'e', 'e', 'e', 'e', 'y', 'y', 'y', 'y', '.', '.', '.', '.'};
-
-    // the cipher key size
-    enum keySize size = SIZE_16;
-
-    // the plaintext
-    unsigned char plaintext[16] = {'a', 'b', 'c', 'd', 'e', 'f', '1', '2', '3', '4', '5', '6', '7', '8', '9', '0'};
-
     // the ciphertext
-    unsigned char ciphertext[16];
-
+    unsigned char ciphertext[256]; // Adjust size as needed
     // the decrypted text
-    unsigned char decryptedtext[16];
-
+    unsigned char decryptedtext[256]; // Adjust size as needed
     int i;
 
     printf("**************************************************\n");
@@ -143,49 +161,52 @@ int main(int argc, char *argv[])
     printf("**************************************************\n");
 
     printf("\nCipher Key (HEX format):\n");
-
-    for (i = 0; i < 16; i++)
-    {
+    for (i = 0; i < keyLen; i++) {
         // Print characters in HEX format, 16 chars per line
-        printf("%2.2x%c", key[i], ((i + 1) % 16) ? ' ' : '\n');
+        printf("%2.2x%c ", keyBytes[i], ((i + 1) % 16) ? ' ' : '\n');
     }
 
     // Test the Key Expansion
-    expandKey(expandedKey, key, size, expandedKeySize);
+    expandKey(expandedKey, keyBytes, size, expandedKeySize);
 
     printf("\nExpanded Key (HEX format):\n");
-
-    for (i = 0; i < expandedKeySize; i++)
-    {
-        printf("%2.2x%c", expandedKey[i], ((i + 1) % 16) ? ' ' : '\n');
+    for (i = 0; i < expandedKeySize; i++) {
+        printf("%2.2x%c ", expandedKey[i], ((i + 1) % 16) ? ' ' : '\n');
     }
 
     printf("\nPlaintext (HEX format):\n");
-
-    for (i = 0; i < 16; i++)
-    {
-        printf("%2.2x%c", plaintext[i], ((i + 1) % 16) ? ' ' : '\n');
+    for (i = 0; i < strlen(plaintext); i++) {
+        printf("%2.2x ", plainBytes[i]);
+    }
+    printf("\nPlaintext (ASCII format):\n");
+    for (i = 0; i < strlen(plaintext); i++) {
+        printf("%c ", plainBytes[i]);
     }
 
     // AES Encryption
-    aes_encrypt(plaintext, ciphertext, key, SIZE_16);
+    aes_encrypt(plainBytes, ciphertext, keyBytes, size);
 
-    printf("\nCiphertext (HEX format):\n");
-
-    for (i = 0; i < 16; i++)
-    {
-        printf("%2.2x%c", ciphertext[i], ((i + 1) % 16) ? ' ' : '\n');
+    printf("\n\nCiphertext (HEX format):\n");
+    for (i = 0; i < strlen(plaintext); i++) {
+        printf("%2.2x ", ciphertext[i]);
+    }
+    printf("\nCiphertext (ASCII format):\n");
+    for (i = 0; i < strlen(plaintext); i++) {
+        printf("%c ", ciphertext[i]);
     }
 
     // AES Decryption
-    aes_decrypt(ciphertext, decryptedtext, key, SIZE_16);
+    aes_decrypt(ciphertext, decryptedtext, keyBytes, size);
 
-    printf("\nDecrypted text (HEX format):\n");
-
-    for (i = 0; i < 16; i++)
-    {
-        printf("%2.2x%c", decryptedtext[i], ((i + 1) % 16) ? ' ' : '\n');
+    printf("\n\nDecrypted text (HEX format):\n");
+    for (i = 0; i < strlen(plaintext); i++) {
+        printf("%2.2x ", decryptedtext[i]);
     }
+    printf("\nDecrypted text (ASCII format):\n");
+    for (i = 0; i < strlen(plaintext); i++) {
+        printf("%c ", decryptedtext[i]);
+    }
+    printf("\n");
 
     return 0;
 }
@@ -618,7 +639,6 @@ void invMixColumn(unsigned char *column)
 
 void aes_invRound(unsigned char *state, unsigned char *roundKey)
 {
-
     invShiftRows(state);
     invSubBytes(state);
     addRoundKey(state, roundKey);
